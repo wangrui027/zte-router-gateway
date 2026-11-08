@@ -17,6 +17,34 @@ uv run zte-router-gateway
 - 接口文档：`http://<IP>:8099/docs`
 - 命令行：`uv run zte-router-gateway --help`
 
+## Docker Compose
+
+```yaml
+services:
+  zte-router-gateway:
+    image: astral/uv:python3.12-alpine
+    container_name: zte-router-gateway
+    working_dir: /app
+    volumes:
+      - ./zte-router-gateway:/app            # 仓库源码目录，SQLite 落在其中的 data/
+    ports:
+      - "8099:8081"                          # 容器内默认 8081，按需改
+    environment:
+      - TZ=Asia/Shanghai
+      - ROUTER_URL=http://192.168.100.1
+      - ROUTER_PWD=xxxxxx
+      - GW_USER=admin
+      - GW_PWD=xxxxxx
+      - APP_TOKEN=xxxxxx
+    command: "uv run zte-router-gateway"
+    restart: always
+```
+
+- 容器内默认监听 `8081`，`ports` 必须映射，否则只能容器间访问。
+- compose 会替换 `$` 变量：密码含 `$` 时写成 `$$`（如 `$$A9PY`），否则会被吞掉。
+- 首次启动 `uv run` 会联网装依赖；国内加 `UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple`。
+- 会话只在内存，容器重启后网关会自己重新登录，浏览器端需要重新登录一次。
+
 ## 环境变量
 
 | 变量 | 默认 | 说明 |
