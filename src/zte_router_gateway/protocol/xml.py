@@ -51,3 +51,17 @@ def parse_instances(xml: str, obj_name: str) -> list[dict[str, str]]:
         if row:
             rows.append(row)
     return rows
+
+
+def parse_all_instances(xml: str) -> list[dict[str, str]]:
+    """不关心外层 OBJ 名字，直接扫出所有 Instance（不同固件的对象名不一样时用）。"""
+    rows: list[dict[str, str]] = []
+    for instance in _INSTANCE_RE.finditer(xml):
+        row: dict[str, str] = {}
+        for pair in _PAIR_RE.finditer(instance.group(1)):
+            name = unescape_xml(pair.group(1).strip())
+            value = unescape_xml(pair.group(2).strip())
+            row[name] = value
+        if row:
+            rows.append(row)
+    return rows

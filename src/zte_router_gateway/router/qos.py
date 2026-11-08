@@ -12,7 +12,7 @@ from urllib.parse import quote
 
 from ..protocol.paths import QOS_BY_MAC_PATH, QOS_RULE_PATH
 from ..protocol.session import SessionManager
-from ..protocol.xml import xml_field
+from ..protocol.xml import parse_all_instances, xml_field
 from ..util import round_half_up, now_ms, parse_json
 from .models import QosState
 
@@ -64,6 +64,25 @@ async def get_qos(session: SessionManager, mac: str) -> QosState:
         "instId": str(rule["ViewName"]),
         "userName": rule.get("UserName") or None,
     }
+
+
+async def list_qos(session: SessionManager) -> list[dict[str, Any]]:
+    """整张限速规则表（路由器原生界面或别的程序设置的规则也在里面）。"""
+    response = await session.call("GET", f"{QOS_RULE_PATH}&_={now_ms()}")
+    rules: list[dict[str, Any]] = []
+    for row in parse_all_instances(response.text):
+        mac = (row.get("MACDev") or "").strip().lower()
+        if not mac:
+            continue
+        rules.append(
+            {
+                "mac": mac,
+                "downKbps": _to_int(row.get("BandwithRateMaxDown")),
+                "upKbps": _to_int(row.get("BandwithRateMaxUp")),
+                "instId": str(row.get("_InstID") or row.get("ViewName") or "") or None,
+            }
+        )
+    return rules
 
 
 async def apply_qos(

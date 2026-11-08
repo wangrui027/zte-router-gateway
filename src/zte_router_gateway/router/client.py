@@ -67,6 +67,9 @@ class RouterClient:
     async def get_qos(self, mac: str) -> QosState:
         return await qos_mod.get_qos(self.session, mac)
 
+    async def list_qos(self) -> list[dict[str, Any]]:
+        return await qos_mod.list_qos(self.session)
+
     async def apply_qos(
         self, mac: str, down_kbps: float, up_kbps: float
     ) -> dict[str, Any]:

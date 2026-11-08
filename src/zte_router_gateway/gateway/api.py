@@ -107,6 +107,12 @@ async def devices(request: Request, status: str = "all") -> DeviceListOut:
     return result
 
 
+@router.get("/qos/rules", dependencies=[Depends(require_session)])
+async def qos_rules(request: Request) -> dict[str, Any]:
+    """路由器上的全部限速规则（含原生界面设置的）。"""
+    return {"rules": await _client(request).list_qos()}
+
+
 @router.get("/devices/{mac}", dependencies=[Depends(require_session)])
 async def device(mac: str, request: Request) -> Device:
     found = await _client(request).get_device(mac.lower())

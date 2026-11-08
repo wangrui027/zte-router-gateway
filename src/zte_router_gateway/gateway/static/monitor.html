@@ -18,8 +18,8 @@
   .brand .name { font-size: 17px; font-weight: 600; color: #fff; }
   .brand .name small { display: block; font-size: 12px; font-weight: 400;
                        color: rgba(255, 255, 255, .75); }
-  .top .el-button { color: #fff; }
-  .top .el-button:hover { color: #e6f2ff; }
+  .top-link { color: #fff; font-size: 14px; text-decoration: none; white-space: nowrap; }
+  .top-link:hover { color: #e6f2ff; text-decoration: underline; }
   .main { padding: 18px 24px 40px; }
   .card { margin-bottom: 16px; border-radius: 10px; }
   .card-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
@@ -83,7 +83,7 @@
       <img src="/__gw/logo.svg" alt="ZTE">
       <div class="name">设备网速监控<small>ZTE Router Gateway</small></div>
     </div>
-    <el-button link type="primary" @click="goHome">返回管理页</el-button>
+    <a class="top-link" href="/">返回管理页</a>
   </div>
 
   <div class="main">
@@ -302,6 +302,7 @@
       return {
         devices: [],
         schedules: [],
+        qosRules: [],
         sysinfo: {},
         favorites: readFavorites(),
         selectedMacs: [],
@@ -322,6 +323,12 @@
         });
         return map;
       },
+      // 路由器原生界面（或别的程序）设置的限速，网关不知道到期时间
+      externalQosByMac: function () {
+        var map = {};
+        this.qosRules.forEach(function (rule) { map[rule.mac] = rule; });
+        return map;
+      },
       filteredDevices: function () {
         var self = this;
         if (this.deviceFilter === "favorite") {
@@ -335,7 +342,8 @@
         }
         if (this.deviceFilter === "limited") {
           return this.devices.filter(function (row) {
-            return Boolean(self.scheduleByMac[self.macKey(row)]);
+            var key = self.macKey(row);
+            return Boolean(self.scheduleByMac[key] || self.externalQosByMac[key]);
           });
         }
         return this.devices;
@@ -405,7 +413,6 @@
       formatSpeed: function (value) {
         return Math.round(this.toKBps(value)).toLocaleString();
       },
-      goHome: function () { location.href = "/"; },
       deviceIconUrl: function (type) {
         var known = {
           phone: 1, pc: 1, notebook: 1, pad: 1, printer: 1, socket: 1,
@@ -530,6 +537,14 @@
         var data = await this.api("/api/qos/schedules");
         this.schedules = data.schedules || [];
       },
+      refreshQosRules: async function () {
+        try {
+          var data = await this.api("/api/qos/rules");
+          this.qosRules = data.rules || [];
+        } catch (e) {
+          console.error(e);
+        }
+      },
       refreshSysinfo: async function () {
         try {
           this.sysinfo = await this.api("/api/sysinfo");
@@ -572,6 +587,7 @@
           await this.refreshDevices();
           await this.refreshSeries();
           await this.refreshSchedules();
+          await this.refreshQosRules();
           await this.refreshSysinfo();
         } catch (e) { console.error(e); }
         this.refreshing = false;
@@ -678,7 +694,10 @@
       // -------------------------------------------------------------- limits
       expiryText: function (row) {
         var schedule = this.scheduleByMac[this.macKey(row)];
-        if (!schedule) { return "-"; }
+        if (!schedule) {
+          if (this.externalQosByMac[this.macKey(row)]) { return "永久（外部限速）"; }
+          return "-";
+        }
         if (schedule.state === "pending") { return "即将生效"; }
         if (!schedule.endsAt) { return "永久"; }
         var left = schedule.endsAt - Date.now();
@@ -687,7 +706,9 @@
       },
       expiryClass: function (row) {
         var schedule = this.scheduleByMac[this.macKey(row)];
-        if (!schedule) { return "muted"; }
+        if (!schedule) {
+          return this.externalQosByMac[this.macKey(row)] ? "permanent" : "muted";
+        }
         if (schedule.state === "pending") { return "muted"; }
         if (!schedule.endsAt) { return "permanent"; }
         if (schedule.endsAt - Date.now() < 600000) { return "expiring"; }
