@@ -26,7 +26,6 @@ from .api import ApiError, router as api_router
 from .branding import LOGO_SVG
 from .keeper import keeper_loop
 from .monitor_api import router as monitor_router
-from .monitor_page import MONITOR_HTML
 from .proxy import PROXY_METHODS, proxy
 from .schedule_api import router as schedule_router
 from .webauth import (
@@ -184,7 +183,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/monitor")
     async def monitor_ui() -> Response:
-        return HTMLResponse(MONITOR_HTML)
+        """每次请求现读文件：改页面不用重启服务。"""
+        page = _STATIC_DIR / "monitor.html"
+        if not page.exists():
+            return Response("monitor.html 缺失", status_code=500)
+        return Response(
+            page.read_bytes(),
+            media_type="text/html; charset=utf-8",
+            headers={"Cache-Control": "no-cache"},
+        )
 
     @app.get("/__gw/static/{filename}")
     async def static_asset(filename: str) -> Response:

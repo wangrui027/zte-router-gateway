@@ -1,11 +1,4 @@
-"""网速监控 + 限速页面。
-
-Vue 3 + Element Plus 全局构建，静态文件全部由网关本地提供，不需要前端打包。
-"""
-
-from __future__ import annotations
-
-MONITOR_HTML = r"""<!doctype html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -51,7 +44,7 @@ MONITOR_HTML = r"""<!doctype html>
   .muted { color: #98a2b3; font-size: 12px; }
   .mono { font-family: Consolas, "SFMono-Regular", monospace; font-size: 12px; color: #8a94a6; }
   .dev-line { display: flex; align-items: center; gap: 6px; }
-  .dev-cell { display: flex; align-items: center; gap: 10px; }
+  .dev-cell { display: flex; align-items: center; justify-content: center; gap: 10px; }
   .dev-icon { flex: none; display: block; width: 34px; height: 34px; object-fit: contain; }
   .dev-text { min-width: 0; }
   .dev-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -63,6 +56,9 @@ MONITOR_HTML = r"""<!doctype html>
   .permanent { color: #3a9cf5; font-weight: 500; }
   .expiring { color: #e6a23c; font-weight: 500; }
   .el-table .cell { line-height: 1.4; }
+  /* 列宽由内容撑开：单元格不换行，表头/单元格统一居中 */
+  .el-table th.el-table__cell > .cell,
+  .el-table td.el-table__cell > .cell { text-align: center; white-space: nowrap; }
   .sysinfo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
                   gap: 14px 24px; }
   .sysinfo-label { margin-bottom: 4px; font-size: 12px; color: #98a2b3; }
@@ -119,8 +115,8 @@ MONITOR_HTML = r"""<!doctype html>
                          @change="toggleDevice(row, $event)"></el-checkbox>
           </template>
         </el-table-column>
-        <el-table-column type="index" label="#" width="56" align="center"></el-table-column>
-        <el-table-column label="设备" min-width="220">
+        <el-table-column type="index" label="#" width="48" align="center"></el-table-column>
+        <el-table-column label="设备" min-width="210" align="center">
           <template #default="{ row }">
             <div class="dev-cell">
               <img class="dev-icon" :src="deviceIconUrl(row.deviceType)"
@@ -137,17 +133,17 @@ MONITOR_HTML = r"""<!doctype html>
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="IP" width="130" align="center">
+        <el-table-column label="IP" min-width="118" align="center">
           <template #default="{ row }"><span class="mono">{{ row.ip || '-' }}</span></template>
         </el-table-column>
-        <el-table-column label="状态" width="82" align="center">
+        <el-table-column label="状态" min-width="76" align="center">
           <template #default="{ row }">
             <el-tag :type="row.online ? 'primary' : 'info'" size="small" effect="plain">
               {{ row.online ? '在线' : '离线' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="信号" width="110" align="center">
+        <el-table-column label="信号" min-width="112" align="center">
           <template #default="{ row }">
             <span v-if="row.wired" class="muted">有线</span>
             <span v-else-if="row.rssi == null" class="muted">-</span>
@@ -158,13 +154,13 @@ MONITOR_HTML = r"""<!doctype html>
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="下载 (KB/s)" width="120" align="center">
+        <el-table-column label="下载 (KB/s)" min-width="106" align="center">
           <template #default="{ row }">{{ formatSpeed(row.downBps) }}</template>
         </el-table-column>
-        <el-table-column label="上传 (KB/s)" width="120" align="center">
+        <el-table-column label="上传 (KB/s)" min-width="106" align="center">
           <template #default="{ row }">{{ formatSpeed(row.upBps) }}</template>
         </el-table-column>
-        <el-table-column label="限速到期" width="160" align="center">
+        <el-table-column label="限速到期" min-width="150" align="center">
           <template #default="{ row }">
             <span :class="expiryClass(row)">{{ expiryText(row) }}</span>
           </template>
@@ -740,4 +736,4 @@ MONITOR_HTML = r"""<!doctype html>
 })();
 </script>
 </body>
-</html>"""
+</html>

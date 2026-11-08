@@ -61,6 +61,7 @@ uv run zte-router-gateway
 - `downBps` / `upBps`：**B/s**；页面显示 KB/s（÷1000）。
 - 限速：**Kbps**；时间：**Unix 毫秒**。
 - 会话与密码只存内存，网关重启后需重新登录；采样写入 SQLite，默认保留 7 天。
+- 监控页是 `gateway/static/monitor.html`，改完刷新浏览器即生效，无需重启服务。
 - 密码含 `$` 等字符时，启动命令必须用**单引号**。
 - 局域网访问需在系统防火墙放行网关端口。
 
