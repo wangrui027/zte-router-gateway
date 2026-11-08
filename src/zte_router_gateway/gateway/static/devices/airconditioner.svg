@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="40px" height="40px" viewBox="0 0 40 40" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>default/default_airconditioner</title>
+    <defs>
+        <linearGradient x1="50%" y1="50%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#A9A9A9" offset="0%"></stop>
+            <stop stop-color="#C5C5C5" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-2">
+            <stop stop-color="#656565" offset="0%"></stop>
+            <stop stop-color="#818181" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-3">
+            <stop stop-color="#EEEEEE" offset="0%"></stop>
+            <stop stop-color="#FFFFFF" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-4" x="16.919227" y="6.731069" width="4.20811065" height="1.04454502" rx="0.522272508"></rect>
+        <filter x="-11.9%" y="-47.9%" width="123.8%" height="195.7%" filterUnits="objectBoundingBox" id="filter-5">
+            <feGaussianBlur stdDeviation="0.5" in="SourceAlpha" result="shadowBlurInner1"></feGaussianBlur>
+            <feOffset dx="0" dy="0" in="shadowBlurInner1" result="shadowOffsetInner1"></feOffset>
+            <feComposite in="shadowOffsetInner1" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowInnerInner1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowInnerInner1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="default/default_airconditioner" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="编组" transform="translate(0.976718, 13.889457)">
+            <path d="M2.5516198,8.19445805 L35.4949449,8.19445805 C36.0472296,8.19445805 36.4949449,8.6421733 36.4949449,9.19445805 C36.4949449,9.47299854 36.3787712,9.73891731 36.1744017,9.92817354 L33.9859348,11.9548021 C33.8010801,12.1259867 33.5584212,12.2210867 33.3064779,12.2210867 L4.74008674,12.2210867 C4.48814349,12.2210867 4.24548458,12.1259867 4.06062991,11.9548021 L1.87216297,9.92817354 C1.4669431,9.5529199 1.44265067,8.9202211 1.81790431,8.51500122 C2.00716054,8.31063175 2.27307931,8.19445805 2.5516198,8.19445805 Z" id="矩形" fill="url(#linearGradient-1)"></path>
+            <rect id="矩形" fill="#E3E3E3" x="1.52328234" y="0" width="35" height="10.1418758" rx="1"></rect>
+            <polygon id="矩形" fill="url(#linearGradient-2)" points="3.61508124 10.588841 34.4314834 10.588841 33.3574097 11.5433622 4.67765755 11.5433622"></polygon>
+            <rect id="矩形" fill="url(#linearGradient-3)" x="2.15902782" y="0.57093791" width="33.728509" height="8.50214869" rx="0.699999988"></rect>
+            <g id="矩形">
+                <use fill="#D8D8D8" fill-rule="evenodd" xlink:href="#path-4"></use>
+                <use fill="black" fill-opacity="1" filter="url(#filter-5)" xlink:href="#path-4"></use>
+            </g>
+        </g>
+    </g>
+</svg>

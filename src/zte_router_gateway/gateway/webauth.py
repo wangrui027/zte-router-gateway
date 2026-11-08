@@ -113,7 +113,7 @@ def login_page(next_url: str, error: str = "") -> str:
   .card {{ width: min(400px, 100%); background: #fff; border-radius: 12px; overflow: hidden;
            box-shadow: 0 12px 40px rgba(31, 45, 61, .12); }}
   .brand {{ background: #3a9cf5; padding: 26px 32px; }}
-  .brand img {{ display: block; height: 68px; width: auto; }}
+  .brand img {{ display: block; height: 40px; width: auto; }}
   .body {{ padding: 26px 32px 30px; }}
   h1 {{ margin: 0 0 6px; font-size: 20px; font-weight: 600; letter-spacing: .5px; }}
   .sub {{ margin: 0 0 22px; font-size: 13px; color: #8a94a6; }}
@@ -154,7 +154,11 @@ def login_page(next_url: str, error: str = "") -> str:
 class WebAuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
-        if path in _PUBLIC_PATHS or path.startswith("/api/"):
+        if (
+            path in _PUBLIC_PATHS
+            or path.startswith("/api/")
+            or path.startswith("/__gw/static/")
+        ):
             return await call_next(request)
 
         store: WebSessionStore = request.app.state.web_sessions

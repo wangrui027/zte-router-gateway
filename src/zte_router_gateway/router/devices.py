@@ -47,8 +47,12 @@ def normalize(row: Mapping[str, str]) -> Device:
         online_times=_to_int(row.get("OnlineTimes")),
         brand=row.get("Brand") or None,
         model=row.get("Model") or None,
+        device_type=(row.get("DisplayedType") or "").lower() or None,
+        vendor=(row.get("DisplayedVendor") or "").lower() or None,
         guest=row.get("isGuestAcessDev") == "1",
         parent=row.get("ParentDeviceName") or None,
+        bytes_sent=_to_int(row.get("BytesSend")),
+        bytes_received=_to_int(row.get("BytesReceived")),
     )
 
 

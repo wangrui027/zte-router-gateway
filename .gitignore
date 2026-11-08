@@ -10,8 +10,10 @@ wheels/
 .venv
 
 # Test / tool caches
-.pytest_cache/
 .ruff_cache/
 
 # IDE
 .idea/
+
+# Runtime data (SQLite)
+data/

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="40px" height="40px" viewBox="0 0 40 40" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>default/default_smartwatch</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="48.0972397%" id="linearGradient-1">
+            <stop stop-color="#D1D1D1" offset="0%"></stop>
+            <stop stop-color="#E4E4E4" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-2">
+            <stop stop-color="#909090" offset="0%"></stop>
+            <stop stop-color="#525353" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="default/default_smartwatch" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="编组" transform="translate(13.000000, 6.913900)">
+            <path d="M3.68969024,0 L3.42491965,3.08256337 C3.30778027,4.44634609 2.30099661,5.56735966 0.95759326,5.82983321 L0.95759326,5.82983321 L0.95759326,5.82983321 L0.95759326,7.18284269 L12.2530565,7.18284269 L12.2530565,5.82983321 C10.9025828,5.56794897 9.89372963,4.43573294 9.78868507,3.06411782 L9.55402091,0 L9.55402091,0 L3.68969024,0 Z" id="路径-10" fill="url(#linearGradient-1)"></path>
+            <path d="M3.68969024,18.8837778 L3.42491965,21.9663412 C3.30778027,23.3301239 2.30099661,24.4511375 0.95759326,24.713611 L0.95759326,24.713611 L0.95759326,24.713611 L0.95759326,26.0666205 L12.2530565,26.0666205 L12.2530565,24.713611 C10.9025828,24.4517268 9.89372963,23.3195108 9.78868507,21.9478956 L9.55402091,18.8837778 L9.55402091,18.8837778 L3.68969024,18.8837778 Z" id="路径-10" fill="url(#linearGradient-1)" transform="translate(6.605325, 22.475199) scale(1, -1) translate(-6.605325, -22.475199) "></path>
+            <rect id="矩形" stroke="#B2B2B2" fill="url(#linearGradient-2)" x="0.5" y="6.28309818" width="12.2106497" height="13.5317147" rx="1"></rect>
+            <rect id="矩形" stroke="#979797" fill="#D8D8D8" x="13.7106497" y="9.53166749" width="1" height="2.70873562"></rect>
+        </g>
+    </g>
+</svg>

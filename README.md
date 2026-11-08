@@ -1,6 +1,6 @@
 # 中兴 SR6110 单会话复用网关
 
-给「限速管理 Android APP」用的后端桥：**网页管理和 APP 同时可用，路由器只看到 1 个会话。**
+用于设备限速与网速监控：**网页管理和 API 调用同时可用，路由器只看到 1 个会话。**
 
 路由器只允许 1 个 Web 会话，且新登录会被拒绝（不是抢占）。所以会话由**网关自己持有**：
 网关用配置里的路由器凭据登录一次，之后网页和 APP 都复用这一个会话。浏览器和 APP
@@ -13,6 +13,8 @@ APP ──Bearer token──┘
 ```
 
 技术栈：**aiohttp 负责对路由器的原始 HTTP 传输，FastAPI + uvicorn 负责网关自身的 API 与网页反代。**
+
+在此之上还提供：**网速采样入库、多设备历史曲线、限速时间窗口与到期自动解除**。
 
 ## 1. 启动
 
@@ -50,7 +52,7 @@ uv run zte-router-gateway
 router-gateway 已启动
   Web 管理:  http://<本机IP>:8099/
              账号 admin  密码 ******
-  APP API :  http://<本机IP>:8099/api/devices
+  API     :  http://<本机IP>:8099/api/devices
   APP_TOKEN: ******
   路由器凭据只来自 ROUTER_PWD；会话只存内存，掉线后网关自动重新登录
 ```
@@ -80,11 +82,15 @@ APP 用同一个地址的 `/api/...`，带 `Authorization: Bearer <APP_TOKEN>`�
 | `GW_PWD` | 随机生成 | 浏览器访问网关的密码；不设置时启动会随机生成并打印 |
 | `GW_WEB_ENTRY` | `/#/menu/dashboard` | 打开根路径后自动跳转的 hash 路由；设为空可关闭 |
 | `GW_SESSION_TTL_HOURS` | `12` | 网关网页登录有效期（小时），重启后全部失效 |
-| `APP_TOKEN` | 随机 24 位 hex | APP 侧 Bearer token（启动时会打印） |
+| `APP_TOKEN` | 随机 24 位 hex | API 调用方的 Bearer token（启动时会打印） |
 | `HEARTBEAT_MS` | `60000` | 保活间隔，最小 30000 |
 | `DEBUG` | 关 | `1` 打印代理日志，`2` 连完整请求头一起打印 |
 | `ROUTER_TIMEOUT` | `20` | 单次路由器请求超时（秒） |
 | `PROXY_TIMEOUT` | `30` | 网页反代请求超时（秒） |
+| `GW_DB_PATH` | `data/gateway.db` | SQLite 数据库路径 |
+| `MONITOR_INTERVAL_SECONDS` | `5` | 设备列表采样间隔 |
+| `MONITOR_RETENTION_DAYS` | `7` | 采样保留天数，`0` 表示不清理 |
+| `SCHEDULER_INTERVAL_SECONDS` | `2` | 限速计划检查间隔 |
 
 ## 2. 项目结构
 
@@ -93,6 +99,10 @@ src/zte_router_gateway/
   config.py              # 环境变量 -> Settings
   errors.py              # RouterError + kind（退避分类依赖它）
   util.py                # URL 编码 / sha256 / SessionTimeout 判定
+  storage.py             # SQLite：设备快照 / 网速采样 / 限速计划
+  services/
+    monitor.py           # 后台采样（默认 5 秒）
+    qos_scheduler.py     # 计划执行 / 到期解除 / 重试 / 对账
   transport.py           # 唯一与 aiohttp 耦合的原始 HTTP 层（TLS、IPv4、cookie jar）
   protocol/
     paths.py             # 所有路由器接口路径
@@ -108,18 +118,18 @@ src/zte_router_gateway/
     app.py               # FastAPI 装配 + 生命周期
     api.py               # /api/* 路由与 Bearer 鉴权
     webauth.py           # 网关登录页 / 会话 cookie / 中间件鉴权 / 登出
+    monitor_api.py       # /api/monitor/*
+    schedule_api.py      # /api/qos/schedules
+    monitor_page.py      # /monitor 页面（ECharts）
+    static/                # ECharts / Vue / Element Plus / 设备图标（本地静态文件）
     proxy.py             # 网页反代（使用网关自己的会话）
     keeper.py            # 会话保活 / 掉线自动重新登录
   cli.py                 # serve / login / recover / devices / qos
-tests/
-  fake_router.py         # 假路由器（模拟登录、设备、限速）
-  test_units.py          # 纯函数单测
-  test_integration.py    # 假路由器 + 真实传输/API/反代端到端测试
 scripts/
   api_smoke.py           # 对运行中的网关做全量 endpoint 冒烟
 ```
 
-**以后接入网速监测时的扩展点：**
+**扩展点：**
 
 - 监测循环直接调用 `RouterClient.list_devices()` / `get_qos()`；`call()` 内部已经处理
   `_sessionTOKEN`、会话失效检测和自动重新登录，循环里不需要关心会话：
@@ -154,7 +164,76 @@ scripts/
 - `/api/health` 的 `passwordConfigured` 表示是否配置了路由器密码，`nextRetrySeconds`
   表示距离下一次重试还有多久。
 
-## 4. 命令行
+## 4. 网速监控与限速
+
+### 采样
+
+后台 `services/monitor.py` 每 `MONITOR_INTERVAL_SECONDS`（默认 5 秒）调用一次设备列表接口，
+把在线设备的上下行速率写进 SQLite：
+
+- 数据库：`GW_DB_PATH`，默认 `data/gateway.db`
+- 表：`devices`（设备快照）、`speed_samples`（时间序列）、`qos_schedules`（限速计划）
+- 保留：`MONITOR_RETENTION_DAYS`（默认 7 天），每小时清理一次
+- 固件的 `DownloadSpeed` / `UploadSpeed` 单位不可靠；网关用 `BytesReceived` / `BytesSend` 的累计值差分计算速率，`downBps` / `upBps` 是 **B/s**
+- 网页按十进制换算成 **KB/s**（÷1000）展示；历史曲线同样存 B/s
+
+### 监控页
+
+浏览器登录后打开：
+
+```
+http://<网关IP>:8099/monitor
+```
+
+- 页面用 **Vue 3 + Element Plus 全局构建**，静态文件全部本地化（`/__gw/static/`），
+  不需要前端打包，也不依赖外网：Vue 3.5.45 / Element Plus 2.14.8 / ECharts 5.5.1
+- 设备表格可勾选设备，勾选状态保存在 `localStorage`；首次打开自动选中
+  当前最活跃的 3 台在线设备
+- 设备列表支持筛选：全部 / 收藏 / 在线 / 离线 / 限速中
+- 设备名前按类型显示中兴官方 access1 图标（手机、电脑、打印机、冰箱、插座、空调等），
+  图标已下载到 `gateway/static/devices/`，由网关本地提供
+- 底部系统信息卡片：运行时间、IPv4 地址、IPv4 在线时长、DNS、备用 DNS（每 60 秒刷新）
+- 当前速率单位 **KB/s**（`BytesReceived` / `BytesSend` 差分得到的 B/s ÷ 1000），每 5 秒刷新
+- 下载/上传两张 ECharts 曲线图作为同一内容块里的子块，宽屏下并排显示，`echarts.connect` 联动缩放和 tooltip
+- 时间范围：5 分钟 / 30 分钟 / 1 小时 / 6 小时 / 24 小时
+- 网关会在路由器侧栏菜单末尾注入一个“网速监控”入口（找不到侧栏时用右下角悬浮按钮），
+  点击进入同一个页面
+
+### 限速
+
+限速直接在设备表格里操作：
+
+- 上下行固定限速 **0.01 Mbps**（10 Kbps）
+- 点「限速」弹出时长菜单：10 分钟 / 30 分钟 / 1 小时 / 2 小时 / 4 小时 / 1 天 / 永久
+- 表格「限速到期」列直接显示剩余时间，例如“1 小时 20 分 后到期”；永久显示“永久”，
+  10 分钟内标橙
+- 「解除」会先取消该设备的有效计划，再删除限速规则
+- 同一设备再次限速会自动取消旧计划，只保留最新一条
+
+路由器原生只有开/关限速，没有时间控制。网关维护 `qos_schedules` 表 + 后台任务：
+
+- `pending` 到点应用限速，并记录应用前的原规则
+- `active` 到点恢复原规则（原来没有限速就删除）
+- 失败按 30s → 60s → … 最长 5 分钟退避重试（计划检查间隔默认 2 秒）
+- 启动时和每 5 分钟对账，路由器重启导致规则丢失会自动补回
+- 取消时：未生效的直接标记取消；已生效的立即恢复原规则
+
+接口见第 7 节。
+
+### 新增接口
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/api/monitor/devices` | 采样库里的设备 |
+| GET | `/api/monitor/series?macs=a,b&from=ms&to=ms` | 多设备历史曲线（服务端自动降采样） |
+| GET | `/api/qos/schedules` | 限速记录列表 |
+| POST | `/api/qos/schedules` | 新建限速（`durationMinutes` 或 `permanent: true`） |
+| DELETE | `/api/qos/schedules/{id}` | 取消限速 |
+
+`/api/*` 既认 `Authorization: Bearer <APP_TOKEN>`，也认已登录的网关网页会话；
+监控页就是用后者直接调接口的。
+
+## 5. 命令行
 
 ```bash
 # 默认命令就是 serve
@@ -178,7 +257,7 @@ uv run zte-router-gateway qos clear AA:BB:CC:DD:EE:FF
 所有命令都需要 `ROUTER_PWD`（网关自己登录）。`login` / `recover` 只是诊断工具，
 命令结束后会话不保留。
 
-## 5. 实测踩过的坑（改代码时别退回去）
+## 6. 实测踩过的坑（改代码时别退回去）
 
 1. **网关必须独占 cookie**
    路由器只认一个会话。网页反代必须使用网关 jar 里的 SID，不能透传浏览器带来的
@@ -227,7 +306,7 @@ uv run zte-router-gateway qos clear AA:BB:CC:DD:EE:FF
     反代会删掉浏览器的 `Accept-Encoding`，让路由器返回未压缩正文。否则 `SessionTimeout`
     文本判定会失效。
 
-## 6. API
+## 7. API
 
 `Authorization: Bearer <APP_TOKEN>`（也支持 `?token=`）。
 
@@ -235,6 +314,7 @@ uv run zte-router-gateway qos clear AA:BB:CC:DD:EE:FF
 |---|---|---|
 | GET | `/api/health` | 会话状态 |
 | GET | `/api/info` | 型号、固件 |
+| GET | `/api/sysinfo` | 运行时间 / WAN IPv4 / 在线时长 / DNS |
 | GET | `/api/devices?status=all\|online\|offline` | 设备列表 |
 | GET | `/api/devices/{mac}` | 单设备 |
 | GET | `/api/devices/{mac}/qos` | 当前限速 |
@@ -248,7 +328,8 @@ uv run zte-router-gateway qos clear AA:BB:CC:DD:EE:FF
   "mac": "AA:BB:CC:DD:EE:FF", "name": "yoga14s", "ip": "192.168.100.54",
   "online": true, "band": "5G", "wired": false, "rssi": -70,
   "downBps": 393, "upBps": 0, "onlineSeconds": 2822400,
-  "lastSeen": null, "brand": null, "model": null, "guest": false
+  "lastSeen": null, "brand": null, "model": null,
+  "deviceType": "phone", "vendor": "xiaomi", "guest": false
 }
 ```
 
@@ -259,24 +340,11 @@ uv run zte-router-gateway qos clear AA:BB:CC:DD:EE:FF
 
 FastAPI 自带 OpenAPI 文档：`http://<机器>:8099/docs`（文档本身不含数据，调用仍需 token）。
 
-## 7. 测试
+## 8. 接口冒烟
 
-```bash
-uv run pytest
-```
-
-测试不依赖真机：`tests/fake_router.py` 起一个假路由器，模拟了登录三步、假成功验货、
-设备 XML、限速读写，覆盖：
-
-- 网关自动登录、会话失效后自动重新登录并重试
-- `_sessionTOKEN` 一次性校验、设备/限速完整读写
-- `/api/*` Bearer 鉴权、参数校验、404
-- 网页反代：登录页/cookie 鉴权、登出、使用网关自己的会话、`Set-Cookie` 不泄漏、凭据不转发
-
-### 对运行中的网关做全量冒烟
-
-`scripts/api_smoke.py` 是零依赖的接口冒烟脚本，覆盖全部 endpoint（鉴权、health、info、
-设备列表三种过滤、单设备、QoS 读写、404 兜底、网关登录/登出、网页反代、OpenAPI 文档）：
+`scripts/api_smoke.py` 是零依赖的接口冒烟脚本，对**运行中的网关**覆盖全部 endpoint
+（鉴权、health、info、设备列表三种过滤、单设备、QoS 读写、404 兜底、网关登录/登出、
+网页反代、OpenAPI 文档）：
 
 ```bash
 # 只读（不碰路由器配置）
@@ -288,34 +356,6 @@ uv run python scripts/api_smoke.py --token <APP_TOKEN> --web-pwd <GW_PWD>
 
 写测试优先选离线设备；如果所有设备都有规则，会选最后一台并在结束时恢复原值。
 `--mac` 可指定目标，`--down-kbps` / `--up-kbps` 可指定测试速率。
-
-## 8. Android 侧
-
-```kotlin
-data class Device(val mac: String, val name: String, val ip: String?,
-                  val online: Boolean, val band: String?, val rssi: Int?)
-
-data class DeviceList(val total: Int, val online: Int, val offline: Int, val devices: List<Device>)
-data class Qos(val mac: String, val limited: Boolean, val downKbps: Long?, val upKbps: Long?)
-
-interface RouterApi {
-    @GET("api/devices") suspend fun devices(@Query("status") s: String = "all"): DeviceList
-    @GET("api/devices/{mac}/qos") suspend fun qos(@Path("mac") mac: String): Qos
-    @PUT("api/devices/{mac}/qos") suspend fun setQos(@Path("mac") mac: String, @Body b: Map<String, Long>): Map<String, Any>
-    @DELETE("api/devices/{mac}/qos") suspend fun clearQos(@Path("mac") mac: String): Map<String, Any>
-}
-
-val client = OkHttpClient.Builder()
-    .addInterceptor { c -> c.proceed(c.request().newBuilder()
-        .header("Authorization", "Bearer $APP_TOKEN").build()) }
-    .build()
-```
-
-清单里允许内网明文：
-
-```xml
-<application android:usesCleartextTraffic="true" ...>
-```
 
 ## 9. 注意事项
 

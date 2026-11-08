@@ -25,6 +25,7 @@ from typing import Sequence
 from .config import Settings
 from .errors import RouterError
 from .router.client import RouterClient
+from .storage import Storage
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +139,8 @@ def _serve(settings: Settings, args: argparse.Namespace) -> int:
     print(f"             账号 {settings.web_user}  密码 {settings.web_pwd}")
     if settings.web_pwd_generated:
         print("             （GW_PWD 未设置，本次密码随机生成，重启会变化）")
-    print(f"  APP API :  http://{ip}:{settings.port}/api/devices")
+    print(f"  API     :  http://{ip}:{settings.port}/api/devices")
+    print(f"  监控页面:  http://{ip}:{settings.port}/monitor")
     print(f"  APP_TOKEN: {settings.token}")
     print("  路由器凭据只来自 ROUTER_PWD；会话只存内存，掉线后网关自动重新登录")
 
@@ -168,6 +170,15 @@ async def _run_command(
             return await _recover(client, args.max_wait_minutes)
         if command == "devices":
             result = await client.list_devices(args.status)
+            # 与 API 一致：用最近一次采样算出的 B/s 覆盖固件不可靠的速率字段
+            storage = Storage(settings.db_path)
+            try:
+                await storage.open()
+                rates = await storage.latest_rates()
+            finally:
+                await storage.close()
+            for item in result.devices:
+                item.down_bps, item.up_bps = rates.get(item.mac.lower(), (0, 0))
             print(
                 json.dumps(
                     result.model_dump(by_alias=True), ensure_ascii=False, indent=2

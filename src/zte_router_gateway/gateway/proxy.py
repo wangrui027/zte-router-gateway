@@ -83,6 +83,66 @@ document.addEventListener('click',function(ev){
   ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();
   try{(window.top||window).location.href='/__gw/logout';}catch(x){location.href='/__gw/logout';}
 },true);
+
+function addMonitorStyle(){
+  if(document.getElementById('gw-monitor-style'))return;
+  var style=document.createElement('style');
+  style.id='gw-monitor-style';
+  style.textContent='#gw-monitor-menu,#gw-monitor-menu *{color:#fff!important;background:transparent!important;}#gw-monitor-menu{cursor:pointer;}#gw-monitor-menu:hover{background:rgba(255,255,255,.12)!important;}';
+  (document.head||document.documentElement).appendChild(style);
+}
+function addMonitorMenu(){
+  if(document.getElementById('gw-monitor-menu'))return true;
+  var container=document.querySelector('.menu_items')||document.querySelector('.sidebar-container');
+  if(!container)return false;
+  var items=container.querySelectorAll('.el-menu-item');
+  var node;
+  if(items.length){
+    var source=items[0];
+    for(var i=0;i<items.length;i++){
+      if(!items[i].classList.contains('is-active')){source=items[i];break;}
+    }
+    node=source.cloneNode(true);
+    node.classList.remove('is-active');
+    var actives=node.querySelectorAll('.is-active');
+    for(var j=0;j<actives.length;j++){actives[j].classList.remove('is-active');}
+    node.style.background='transparent';
+    node.style.color='#fff';
+    var label=node.querySelector('span');
+    if(label){label.textContent='网速监控';}else{node.textContent='网速监控';}
+  }else{
+    node=document.createElement('div');
+    node.style.cssText='display:flex;align-items:center;height:52px;padding:0 20px;color:#fff;font-size:14px;cursor:pointer;';
+    node.innerHTML='<span>网速监控</span>';
+  }
+  node.id='gw-monitor-menu';
+  node.addEventListener('click',function(ev){
+    ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();
+    location.href='/monitor';
+  },true);
+  addMonitorStyle();
+  container.appendChild(node);
+  return true;
+}
+function addMonitorFab(){
+  if(document.getElementById('gw-monitor-fab'))return;
+  var a=document.createElement('a');
+  a.id='gw-monitor-fab';
+  a.href='/monitor';
+  a.textContent='网速监控';
+  a.style.cssText='position:fixed;right:16px;bottom:72px;z-index:9999;background:#3a9cf5;color:#fff;padding:9px 16px;border-radius:20px;text-decoration:none;font-size:13px;box-shadow:0 6px 18px rgba(58,156,245,.4);';
+  document.body.appendChild(a);
+}
+function startShim(){
+  addMonitorMenu();
+  var pending=false;
+  new MutationObserver(function(){
+    if(pending)return;pending=true;
+    setTimeout(function(){pending=false;addMonitorMenu();},300);
+  }).observe(document.body,{childList:true,subtree:true});
+  setTimeout(function(){if(!document.getElementById('gw-monitor-menu'))addMonitorFab();},3000);
+}
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',startShim);}else{startShim();}
 })();</script>"""
 
 

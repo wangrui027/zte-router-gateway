@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="40px" height="40px" viewBox="0 0 40 40" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>default/default_other</title>
+    <defs>
+        <linearGradient x1="27.8721531%" y1="0%" x2="68.5965144%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FAFAFA" offset="0%"></stop>
+            <stop stop-color="#E4E4E4" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="22.1186466%" y1="21.3394863%" x2="76.3740303%" y2="83.6372877%" id="linearGradient-2">
+            <stop stop-color="#D3D3D3" offset="0%"></stop>
+            <stop stop-color="#989898" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="37.3831088%" y1="0%" x2="60.6033904%" y2="100%" id="linearGradient-3">
+            <stop stop-color="#FAFAFA" offset="0%"></stop>
+            <stop stop-color="#E4E4E4" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="66.7360959%" y1="16.7360959%" x2="66.7360959%" y2="83.2639041%" id="linearGradient-4">
+            <stop stop-color="#CBCBCB" offset="0%"></stop>
+            <stop stop-color="#989898" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="default/default_other" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="编组-14" transform="translate(9.618878, 8.059780)">
+            <rect id="矩形备份-19" stroke="url(#linearGradient-2)" fill="url(#linearGradient-1)" x="5.68434189e-14" y="0" width="18.27995" height="22.5787029" rx="2"></rect>
+            <path d="M15.1417014,8.14362028 L20.7622442,8.14362028 C21.8668137,8.14362028 22.7622442,9.03905078 22.7622442,10.1436203 L22.7622442,21.8804396 C22.7622442,22.9850091 21.8668137,23.8804396 20.7622442,23.8804396 L15.1417014,23.8804396 C14.0371319,23.8804396 13.1417014,22.9850091 13.1417014,21.8804396 L13.1417014,10.1436203 C13.1417014,9.03905078 14.0371319,8.14362028 15.1417014,8.14362028 Z" id="路径-6备份" stroke="url(#linearGradient-4)" fill="url(#linearGradient-3)"></path>
+        </g>
+    </g>
+</svg>

@@ -47,6 +47,12 @@ class Settings:
     router_timeout: float = 20.0
     proxy_timeout: float = 30.0
 
+    # 网速采样 / 限速计划
+    db_path: str = "data/gateway.db"
+    monitor_interval: float = 5.0
+    monitor_retention_days: float = 7.0
+    scheduler_interval: float = 2.0
+
     def __post_init__(self) -> None:
         self.router = self.router.rstrip("/")
         self.user = self.user or "admin"
@@ -56,6 +62,9 @@ class Settings:
             self.web_pwd = secrets.token_urlsafe(12)
             self.web_pwd_generated = True
         self.heartbeat_ms = max(30_000, int(self.heartbeat_ms))
+        self.monitor_interval = max(0.2, float(self.monitor_interval))
+        self.scheduler_interval = max(0.2, float(self.scheduler_interval))
+        self.monitor_retention_days = max(0.0, float(self.monitor_retention_days))
 
     # ---- 路由器地址拆解 ----
 
@@ -91,4 +100,12 @@ class Settings:
             heartbeat_ms=int(os.environ.get("HEARTBEAT_MS") or 60_000),
             router_timeout=float(os.environ.get("ROUTER_TIMEOUT") or 20),
             proxy_timeout=float(os.environ.get("PROXY_TIMEOUT") or 30),
+            db_path=os.environ.get("GW_DB_PATH") or "data/gateway.db",
+            monitor_interval=float(os.environ.get("MONITOR_INTERVAL_SECONDS") or 5),
+            monitor_retention_days=float(
+                os.environ.get("MONITOR_RETENTION_DAYS") or 7
+            ),
+            scheduler_interval=float(
+                os.environ.get("SCHEDULER_INTERVAL_SECONDS") or 2
+            ),
         )

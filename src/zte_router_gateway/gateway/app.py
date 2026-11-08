@@ -1,6 +1,6 @@
 """FastAPI 应用装配。
 
-一个进程只起一个 HTTP 服务：网页反代和 /api/* 同源。
+一个进程只起一个 HTTP 服务：网页反代、监控页、/api/* 同源。
 网关自己登录路由器并持有唯一会话；浏览器用网关自己的账号登录（会话 cookie）。
 """
 
@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from contextlib import asynccontextmanager, suppress
+from pathlib import Path
 from urllib.parse import parse_qs
 
 from fastapi import FastAPI, Request
@@ -17,10 +19,16 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from ..config import Settings
 from ..errors import RouterError
 from ..router.client import RouterClient
+from ..services.monitor import MonitorService
+from ..services.qos_scheduler import QosScheduler
+from ..storage import Storage
 from .api import ApiError, router as api_router
 from .branding import LOGO_SVG
 from .keeper import keeper_loop
+from .monitor_api import router as monitor_router
+from .monitor_page import MONITOR_HTML
 from .proxy import PROXY_METHODS, proxy
+from .schedule_api import router as schedule_router
 from .webauth import (
     COOKIE_NAME,
     WebAuthMiddleware,
@@ -31,6 +39,15 @@ from .webauth import (
 )
 
 logger = logging.getLogger(__name__)
+
+_STATIC_DIR = Path(__file__).with_name("static")
+
+_STATIC_FILES = {
+    "echarts.min.js": "application/javascript",
+    "vue.global.prod.js": "application/javascript",
+    "element-plus.full.min.js": "application/javascript",
+    "element-plus.css": "text/css",
+}
 
 
 def _register_exception_handlers(app: FastAPI) -> None:
@@ -112,10 +129,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(app: FastAPI):
         client = RouterClient(settings)
         await client.open()
+
+        storage = Storage(settings.db_path)
+        await storage.open()
+        monitor = MonitorService(client, storage, settings)
+        scheduler = QosScheduler(client, storage, settings)
+
         app.state.settings = settings
         app.state.client = client
         app.state.transport = client.transport
         app.state.session = client.session
+        app.state.storage = storage
+        app.state.scheduler = scheduler
         app.state.web_sessions = WebSessionStore(
             settings.web_session_ttl_hours * 3600
         )
@@ -125,24 +150,71 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "[init] 未配置 ROUTER_PWD —— 网关无法登录路由器，Web/API 都会不可用"
             )
         logger.info("[init] 目标路由器 %s（用户 %s）", settings.router, settings.user)
+        logger.info(
+            "[init] 采样间隔 %ss，保留 %s 天，数据库 %s",
+            settings.monitor_interval,
+            settings.monitor_retention_days,
+            settings.db_path,
+        )
 
-        keeper = asyncio.create_task(keeper_loop(client))
+        tasks = [
+            asyncio.create_task(keeper_loop(client), name="keeper"),
+            asyncio.create_task(monitor.run(), name="monitor"),
+            asyncio.create_task(scheduler.run(), name="scheduler"),
+        ]
         try:
             yield
         finally:
-            keeper.cancel()
-            with suppress(asyncio.CancelledError):
-                await keeper
+            for task in tasks:
+                task.cancel()
+            for task in tasks:
+                with suppress(asyncio.CancelledError):
+                    await task
+            await storage.close()
             await client.close()
 
-    app = FastAPI(title="ZTE Router Gateway", version="0.2.0", lifespan=lifespan)
+    app = FastAPI(title="ZTE Router Gateway", version="0.3.0", lifespan=lifespan)
     _register_exception_handlers(app)
     _register_web_auth_routes(app, settings)
 
-    # 顺序很重要：/api/* 先注册，登录/登出其次，最后才是兜底反代
+    # 顺序很重要：/api/* 先注册，其它固定路由其次，最后才是兜底反代
     app.include_router(api_router)
+    app.include_router(monitor_router)
+    app.include_router(schedule_router)
+
+    @app.get("/monitor")
+    async def monitor_ui() -> Response:
+        return HTMLResponse(MONITOR_HTML)
+
+    @app.get("/__gw/static/{filename}")
+    async def static_asset(filename: str) -> Response:
+        media_type = _STATIC_FILES.get(filename)
+        if media_type is None:
+            return Response("not found", status_code=404)
+        asset = _STATIC_DIR / filename
+        if not asset.exists():
+            return Response("not found", status_code=404)
+        return Response(
+            asset.read_bytes(),
+            media_type=media_type,
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
+
+    @app.get("/__gw/static/devices/{filename}")
+    async def device_icon(filename: str) -> Response:
+        if not re.fullmatch(r"[a-z0-9_-]+\.svg", filename):
+            return Response("not found", status_code=404)
+        asset = _STATIC_DIR / "devices" / filename
+        if not asset.exists():
+            return Response("not found", status_code=404)
+        return Response(
+            asset.read_bytes(),
+            media_type="image/svg+xml",
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
+
     app.api_route("/{full_path:path}", methods=PROXY_METHODS)(proxy)
 
-    # 网页管理要求先登录网关（/api/* 与登录/登出由中间件放行）
+    # 网页管理要求先登录网关（/api/*、登录/登出、静态资源由中间件放行）
     app.add_middleware(WebAuthMiddleware)
     return app

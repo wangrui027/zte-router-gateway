@@ -13,6 +13,7 @@ from ..protocol.session import SessionManager
 from ..transport import Transport
 from . import devices as devices_mod
 from . import qos as qos_mod
+from . import sysinfo as sysinfo_mod
 from .models import Device, DeviceListOut, QosState
 
 
@@ -57,6 +58,9 @@ class RouterClient:
 
     async def router_info(self) -> dict[str, str | None]:
         return await devices_mod.router_info(self.session)
+
+    async def sysinfo(self) -> dict[str, Any]:
+        return await sysinfo_mod.system_info(self.session)
 
     # --------------------------------------------------------------------- qos
 

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="40px" height="40px" viewBox="0 0 40 40" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>default/default_pad</title>
+    <defs>
+        <linearGradient x1="31.3379577%" y1="0%" x2="69.0853204%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#F8F8F8" offset="0%"></stop>
+            <stop stop-color="#D1D1D1" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-2">
+            <stop stop-color="#545454" stop-opacity="0.639778191" offset="0%"></stop>
+            <stop stop-color="#000000" stop-opacity="0.639778191" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="default/default_pad" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="编组" transform="translate(10.058824, 7.000000)">
+            <g id="icon/notebook备份" opacity="0.600000024" fill="url(#linearGradient-1)" stroke="url(#linearGradient-2)">
+                <path d="M17.8823529,0.5 C18.2965665,0.5 18.6715665,0.667893219 18.9430131,0.939339828 C19.2144597,1.21078644 19.3823529,1.58578644 19.3823529,2 L19.3823529,24 C19.3823529,24.4142136 19.2144597,24.7892136 18.9430131,25.0606602 C18.6715665,25.3321068 18.2965665,25.5 17.8823529,25.5 L2,25.5 C1.58578644,25.5 1.21078644,25.3321068 0.939339828,25.0606602 C0.667893219,24.7892136 0.5,24.4142136 0.5,24 L0.5,2 C0.5,1.58578644 0.667893219,1.21078644 0.939339828,0.939339828 C1.21078644,0.667893219 1.58578644,0.5 2,0.5 Z" id="矩形"></path>
+            </g>
+            <circle id="椭圆形" fill="#FFFFFF" cx="9.94117647" cy="22.9038322" r="1"></circle>
+        </g>
+    </g>
+</svg>

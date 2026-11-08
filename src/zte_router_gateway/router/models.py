@@ -1,6 +1,6 @@
 """对外数据模型。
 
-字段用 snake_case + alias，对外保持稳定的 camelCase JSON 契约（Android 端不用改）。
+字段用 snake_case + alias，对外保持稳定的 camelCase JSON 契约。
 FastAPI 默认按 alias 序列化。
 """
 
@@ -25,8 +25,12 @@ class Device(BaseModel):
     band: str | None = None
     wired: bool
     rssi: int | None = None
+    # 对外字段沿用 downBps/upBps；值由 BytesReceived/BytesSend 差分得到，单位 B/s
     up_bps: int = Field(0, alias="upBps")
     down_bps: int = Field(0, alias="downBps")
+    # 仅内部采样使用，不进入 JSON
+    bytes_sent: int = Field(0, exclude=True)
+    bytes_received: int = Field(0, exclude=True)
     online_seconds: int = Field(0, alias="onlineSeconds")
     last_seen: str | None = Field(None, alias="lastSeen")
     active_time: str | None = Field(None, alias="activeTime")
@@ -34,6 +38,8 @@ class Device(BaseModel):
     brand: str | None = None
     # 注意：字段名 model 不触发 pydantic 的 model_ 保护命名空间
     model: str | None = None
+    device_type: str | None = Field(None, alias="deviceType")
+    vendor: str | None = None
     guest: bool
     parent: str | None = None
 

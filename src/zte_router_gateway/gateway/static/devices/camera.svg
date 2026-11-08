@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="40px" height="40px" viewBox="0 0 40 40" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>default/default_camera</title>
+    <defs>
+        <linearGradient x1="50%" y1="17.6916972%" x2="50%" y2="95.8494386%" id="linearGradient-1">
+            <stop stop-color="#A7A7A7" offset="0%"></stop>
+            <stop stop-color="#D3D3D3" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="24.7595077%" y1="11.9700811%" x2="53.6701875%" y2="94.4938965%" id="linearGradient-2">
+            <stop stop-color="#EFEFEF" offset="0%"></stop>
+            <stop stop-color="#D1D1D1" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-3">
+            <stop stop-color="#C6C6C6" offset="0%"></stop>
+            <stop stop-color="#F0F0F0" offset="100%"></stop>
+        </linearGradient>
+        <radialGradient cx="50%" cy="50%" fx="50%" fy="50%" r="50%" id="radialGradient-4">
+            <stop stop-color="#000000" offset="0%"></stop>
+            <stop stop-color="#585858" offset="100%"></stop>
+        </radialGradient>
+    </defs>
+    <g id="default/default_camera" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="编组">
+            <rect id="矩形" x="0" y="0" width="40" height="40"></rect>
+            <g id="编组-8" transform="translate(9.123102, 6.354043)">
+                <polygon id="矩形" fill="url(#linearGradient-1)" points="6.26505665 19.647032 15.3575912 19.647032 16.8834285 25.3739416 4.87036753 25.3739416"></polygon>
+                <circle id="椭圆形" fill="url(#linearGradient-2)" cx="10.876898" cy="10.876898" r="10.876898"></circle>
+                <rect id="矩形" stroke="url(#linearGradient-3)" stroke-width="0.5" fill="#4B4B4B" x="5.61887824" y="2.99758137" width="10.5815784" height="15.7586333" rx="4.94225883"></rect>
+                <circle id="椭圆形" fill="#6A6A6A" cx="10.9096674" cy="11.4601276" r="3.90323001"></circle>
+                <circle id="椭圆形" stroke="#000000" stroke-width="0.525783692" fill="url(#radialGradient-4)" cx="10.9096674" cy="11.4601276" r="1.70164548"></circle>
+                <circle id="椭圆形" fill="#CFCFCF" cx="10.9096674" cy="8.58864486" r="1"></circle>
+                <rect id="矩形" fill="#A2A2A2" x="1.37679387" y="25.3739416" width="19.0002086" height="1" rx="0.5"></rect>
+            </g>
+        </g>
+    </g>
+</svg>

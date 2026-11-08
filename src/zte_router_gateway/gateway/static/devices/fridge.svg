@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="40px" height="40px" viewBox="0 0 40 40" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>default/default_fridge</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#E4E4E4" offset="0%"></stop>
+            <stop stop-color="#DADADA" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-2">
+            <stop stop-color="#FAFAFA" offset="0%"></stop>
+            <stop stop-color="#F3F3F3" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-3">
+            <stop stop-color="#FAFAFA" offset="0%"></stop>
+            <stop stop-color="#F3F3F3" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="default/default_fridge" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="编组" transform="translate(11.920338, 2.657133)">
+            <rect id="矩形" fill="url(#linearGradient-1)" x="0" y="0" width="16.1593238" height="34.4587357" rx="1"></rect>
+            <rect id="矩形" fill="#C2C2C2" x="1.01069967" y="0.959612539" width="14.1379245" height="13.9241798" rx="1"></rect>
+            <rect id="矩形备份-2" fill="#C2C2C2" x="1.01069967" y="21.2216739" width="14.1379245" height="11.4416463" rx="1"></rect>
+            <rect id="矩形" fill="url(#linearGradient-2)" x="1.01069967" y="0.708148255" width="14.1379245" height="13.9241798" rx="1"></rect>
+            <rect id="矩形备份-2" fill="url(#linearGradient-3)" x="1.01069967" y="16.2973656" width="14.1379245" height="16.1593238" rx="1"></rect>
+            <rect id="矩形" stroke="#979797" fill="#D8D8D8" x="1.51069967" y="34.9587357" width="1" height="1"></rect>
+            <rect id="矩形备份" stroke="#979797" fill="#D8D8D8" x="14.5796619" y="34.9587357" width="1" height="1"></rect>
+        </g>
+    </g>
+</svg>

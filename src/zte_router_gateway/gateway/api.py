@@ -1,4 +1,4 @@
-"""APP 侧 REST API。"""
+"""REST API。"""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, Request
 from ..router.client import RouterClient
 from ..router.models import Device, DeviceListOut, QosState
 from ..util import parse_json
+from .webauth import COOKIE_NAME
 
 _BEARER_RE = re.compile(r"^Bearer\s+", re.IGNORECASE)
 
@@ -30,6 +31,11 @@ def _constant_eq(left: str, right: str) -> bool:
 
 
 def authorized(request: Request) -> bool:
+    # 已登录网关网页的用户可以直接调用 API（监控页就是这么用的）
+    store = request.app.state.web_sessions
+    if store.validate(request.cookies.get(COOKIE_NAME)):
+        return True
+
     token = request.app.state.settings.token
     header = request.headers.get("authorization") or ""
     bearer = _BEARER_RE.sub("", header)
@@ -45,7 +51,7 @@ async def require_token(request: Request) -> None:
             401,
             {
                 "error": "unauthorized",
-                "hint": "Authorization: Bearer <APP_TOKEN>",
+                "hint": "Authorization: Bearer <APP_TOKEN>（或使用已登录的网关网页会话）",
             },
         )
 
@@ -67,6 +73,15 @@ def _client(request: Request) -> RouterClient:
     return request.app.state.client
 
 
+async def _apply_rates(request: Request, devices: list[Device]) -> None:
+    """用采样服务算出的 B/s 覆盖固件不可靠的 DownloadSpeed/UploadSpeed。"""
+    rates = await request.app.state.storage.latest_rates()
+    for device in devices:
+        down, up = rates.get(device.mac.lower(), (0, 0))
+        device.down_bps = down
+        device.up_bps = up
+
+
 router = APIRouter(prefix="/api", dependencies=[Depends(require_token)])
 
 
@@ -80,9 +95,16 @@ async def info(request: Request) -> dict[str, str | None]:
     return await _client(request).router_info()
 
 
+@router.get("/sysinfo", dependencies=[Depends(require_session)])
+async def sysinfo(request: Request) -> dict[str, Any]:
+    return await _client(request).sysinfo()
+
+
 @router.get("/devices", dependencies=[Depends(require_session)])
 async def devices(request: Request, status: str = "all") -> DeviceListOut:
-    return await _client(request).list_devices(status)
+    result = await _client(request).list_devices(status)
+    await _apply_rates(request, result.devices)
+    return result
 
 
 @router.get("/devices/{mac}", dependencies=[Depends(require_session)])
@@ -90,6 +112,7 @@ async def device(mac: str, request: Request) -> Device:
     found = await _client(request).get_device(mac.lower())
     if found is None:
         raise ApiError(404, {"error": "device not found"})
+    await _apply_rates(request, [found])
     return found
 
 
