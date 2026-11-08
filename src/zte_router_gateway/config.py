@@ -40,7 +40,7 @@ class Settings:
     # 浏览器打开根路径时自动落到这个 hash 路由（固件默认在 / 显示登录视图）
     web_entry: str = "/#/menu/dashboard"
     # 网关网页会话有效期（小时）
-    web_session_ttl_hours: float = 12.0
+    web_session_ttl_hours: float = 720.0  # 30 天
 
     debug: int = 0
     heartbeat_ms: int = 60_000
@@ -94,7 +94,7 @@ class Settings:
             web_pwd=os.environ.get("GW_PWD") or "",
             web_entry=os.environ.get("GW_WEB_ENTRY", "/#/menu/dashboard"),
             web_session_ttl_hours=float(
-                os.environ.get("GW_SESSION_TTL_HOURS") or 12
+                os.environ.get("GW_SESSION_TTL_HOURS") or 720
             ),
             debug=_debug_level(os.environ.get("DEBUG")),
             heartbeat_ms=int(os.environ.get("HEARTBEAT_MS") or 60_000),
