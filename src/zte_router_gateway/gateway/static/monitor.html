@@ -83,7 +83,7 @@
       <img src="/__gw/logo.svg" alt="ZTE">
       <div class="name">设备网速监控<small>ZTE Router Gateway</small></div>
     </div>
-    <a class="top-link" href="/">返回管理页</a>
+    <a class="top-link" href="/">路由管理</a>
   </div>
 
   <div class="main">
@@ -170,7 +170,10 @@
         </el-table-column>
         <el-table-column label="限速到期" min-width="150" align="center">
           <template #default="{ row }">
-            <span :class="expiryClass(row)">{{ expiryText(row) }}</span>
+            <el-tooltip :content="limitTitle(row)" placement="top"
+                        :disabled="!limitTitle(row)">
+              <span :class="expiryClass(row)">{{ expiryText(row) }}</span>
+            </el-tooltip>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="168" align="center">
@@ -708,6 +711,23 @@
         var left = schedule.endsAt - Date.now();
         if (left <= 0) { return "已到期"; }
         return this.formatRemaining(left) + " 后到期";
+      },
+      limitTitle: function (row) {
+        if (this.busyMacs[this.macKey(row)]) { return ""; }
+        // 网关自己的计划以计划表里的速率为准；外部限速只能读路由器规则表
+        var limit = this.scheduleByMac[this.macKey(row)]
+          || this.externalQosByMac[this.macKey(row)];
+        if (!limit) { return ""; }
+        return "下行 " + this.formatRateKbps(limit.downKbps)
+          + " · 上行 " + this.formatRateKbps(limit.upKbps);
+      },
+      formatRateKbps: function (kbps) {
+        var value = Number(kbps || 0);
+        if (value <= 0) { return "不限"; }
+        if (value >= 1000) {
+          return (value / 1000).toFixed(value % 1000 === 0 ? 0 : 2) + " Mbps";
+        }
+        return value + " Kbps";
       },
       expiryClass: function (row) {
         if (this.busyMacs[this.macKey(row)]) { return "muted"; }
