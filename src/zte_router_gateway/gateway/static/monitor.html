@@ -311,6 +311,7 @@
         rangeMinutes: readRange(),
         refreshing: false,
         mutating: false,
+        busyMacs: {},
         timer: null
       };
     },
@@ -587,8 +588,9 @@
         try {
           await this.refreshDevices();
           await this.refreshSeries();
-          await this.refreshSchedules();
+          // 规则表先于计划表：否则计划到期/取消瞬间会落到「永久（外部限速）」
           await this.refreshQosRules();
+          await this.refreshSchedules();
           await this.refreshSysinfo();
         } catch (e) { console.error(e); }
         this.refreshing = false;
@@ -694,6 +696,8 @@
 
       // -------------------------------------------------------------- limits
       expiryText: function (row) {
+        var busy = this.busyMacs[this.macKey(row)];
+        if (busy) { return busy; }
         var schedule = this.scheduleByMac[this.macKey(row)];
         if (!schedule) {
           if (this.externalQosByMac[this.macKey(row)]) { return "永久（外部限速）"; }
@@ -706,6 +710,7 @@
         return this.formatRemaining(left) + " 后到期";
       },
       expiryClass: function (row) {
+        if (this.busyMacs[this.macKey(row)]) { return "muted"; }
         var schedule = this.scheduleByMac[this.macKey(row)];
         if (!schedule) {
           return this.externalQosByMac[this.macKey(row)] ? "permanent" : "muted";
@@ -737,6 +742,7 @@
           body.permanent = true;
         }
         this.mutating = true;
+        this.busyMacs[key] = "设置中…";
         try {
           await this.api("/api/qos/schedules", {
             method: "POST",
@@ -748,12 +754,13 @@
         } catch (e) {
           ElMessage.error("限速失败：" + e.message);
         } finally {
-          await this.reloadLimitState();
+          await this.reloadLimitState(key);
         }
       },
       clearLimit: async function (row) {
         var key = this.macKey(row);
         this.mutating = true;
+        this.busyMacs[key] = "解除中…";
         try {
           await this.refreshSchedules();
           var schedules = this.schedules.filter(function (schedule) {
@@ -764,18 +771,23 @@
             await this.api("/api/qos/schedules/" + schedules[i].id, { method: "DELETE" });
           }
           await this.api("/api/devices/" + encodeURIComponent(key) + "/qos", { method: "DELETE" });
+          // 服务端已确认规则删掉，先摘掉本地缓存，避免在重拉完成前落到「外部限速」
+          this.qosRules = this.qosRules.filter(function (rule) { return rule.mac !== key; });
           ElMessage.success((row.name || key) + " 已解除限速");
         } catch (e) {
           ElMessage.error("解除失败：" + e.message);
         } finally {
-          await this.reloadLimitState();
+          await this.reloadLimitState(key);
         }
       },
       // 限速写操作要等接口返回后再拉状态，否则计划表和规则表不同步，会闪一下「永久（外部限速）」
-      reloadLimitState: async function () {
+      reloadLimitState: async function (key) {
         try {
-          await Promise.all([this.refreshSchedules(), this.refreshQosRules()]);
+          // 先规则表、再计划表：计划行先消失而规则表还是旧的，会闪一下「永久（外部限速）」
+          await this.refreshQosRules();
+          await this.refreshSchedules();
         } finally {
+          delete this.busyMacs[key];
           this.mutating = false;
         }
       }
