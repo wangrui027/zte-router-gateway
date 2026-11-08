@@ -25,6 +25,26 @@ def _to_int(value: Any) -> int:
     return int(number) if number is not None else 0
 
 
+# 不同固件 / 不同接口对频段的写法不统一，这里统一成 2.4G / 5G
+_BAND_ALIAS = {
+    "2": "2.4G", "2g": "2.4G", "2.4": "2.4G", "2.4g": "2.4G", "2.4ghz": "2.4G",
+    "5": "5G", "5g": "5G", "5ghz": "5G",
+}
+
+
+def _band(row: Mapping[str, str]) -> str | None:
+    """频段：优先用 Band 字段；为空时按无线网卡名（wlan5g0 / wlan0）推断。"""
+    raw = (row.get("Band") or "").strip()
+    if raw and raw != "0":
+        return _BAND_ALIAS.get(raw.lower(), raw)
+    interface = (row.get("Interface") or "").strip().lower()
+    if "5g" in interface:
+        return "5G"
+    if interface.startswith("wlan"):
+        return "2.4G"
+    return None
+
+
 def normalize(row: Mapping[str, str]) -> Device:
     """把路由器返回的 ParaName/ParaValue 行映射成设备对象。"""
     ip = row.get("IPAddress")
@@ -36,7 +56,7 @@ def normalize(row: Mapping[str, str]) -> Device:
         ip=ip if ip and ip != "0.0.0.0" else None,
         ipv6=row.get("IPV6Address") or None,
         online=row.get("Active") == "1",
-        band=row.get("Band") or None,
+        band=_band(row),
         wired=row.get("InterfaceType") == "1",
         rssi=_to_int(rssi) if rssi and rssi != "0" else None,
         up_bps=_to_int(row.get("UploadSpeed")),

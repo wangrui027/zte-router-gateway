@@ -154,6 +154,14 @@
             </span>
           </template>
         </el-table-column>
+        <el-table-column label="频段" min-width="78" align="center">
+          <template #default="{ row }">
+            <el-tag v-if="row.band" size="small" effect="plain" :type="bandTagType(row.band)">
+              {{ row.band }}
+            </el-tag>
+            <span v-else class="muted">-</span>
+          </template>
+        </el-table-column>
         <el-table-column label="下载 (KB/s)" min-width="106" align="center">
           <template #default="{ row }">{{ formatSpeed(row.downBps) }}</template>
         </el-table-column>
@@ -418,6 +426,12 @@
         if (value >= -65) { return 3; }
         if (value >= -80) { return 2; }
         return 1;
+      },
+      bandTagType: function (band) {
+        var value = String(band || "").toUpperCase();
+        if (value.indexOf("5") === 0) { return "primary"; }
+        if (value.indexOf("2") === 0) { return "warning"; }
+        return "info";
       },
       signalLabel: function (rssi) {
         return { 4: "信号很好", 3: "信号良好", 2: "信号一般（可用）", 1: "信号较弱" }[
