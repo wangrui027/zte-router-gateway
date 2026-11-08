@@ -310,6 +310,7 @@
         deviceFilter: readFilter(),
         rangeMinutes: readRange(),
         refreshing: false,
+        mutating: false,
         timer: null
       };
     },
@@ -581,7 +582,7 @@
         this.updateSeries(data.series || []);
       },
       refreshAll: async function () {
-        if (this.refreshing) { return; }
+        if (this.refreshing || this.mutating) { return; }
         this.refreshing = true;
         try {
           await this.refreshDevices();
@@ -735,6 +736,7 @@
         } else {
           body.permanent = true;
         }
+        this.mutating = true;
         try {
           await this.api("/api/qos/schedules", {
             method: "POST",
@@ -743,13 +745,15 @@
           });
           var suffix = minutes > 0 ? "，" + minutes + " 分钟后自动解除" : "（永久）";
           ElMessage.success((row.name || key) + " 已限速 0.01/0.01 Mbps" + suffix);
-          await this.refreshSchedules();
         } catch (e) {
           ElMessage.error("限速失败：" + e.message);
+        } finally {
+          await this.reloadLimitState();
         }
       },
       clearLimit: async function (row) {
         var key = this.macKey(row);
+        this.mutating = true;
         try {
           await this.refreshSchedules();
           var schedules = this.schedules.filter(function (schedule) {
@@ -761,9 +765,18 @@
           }
           await this.api("/api/devices/" + encodeURIComponent(key) + "/qos", { method: "DELETE" });
           ElMessage.success((row.name || key) + " 已解除限速");
-          await this.refreshSchedules();
         } catch (e) {
           ElMessage.error("解除失败：" + e.message);
+        } finally {
+          await this.reloadLimitState();
+        }
+      },
+      // 限速写操作要等接口返回后再拉状态，否则计划表和规则表不同步，会闪一下「永久（外部限速）」
+      reloadLimitState: async function () {
+        try {
+          await Promise.all([this.refreshSchedules(), this.refreshQosRules()]);
+        } finally {
+          this.mutating = false;
         }
       }
     }
